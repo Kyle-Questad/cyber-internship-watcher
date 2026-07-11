@@ -29,10 +29,21 @@ import requests
 # ---------------------------------------------------------------------------
 
 KEYWORDS = [
-    "security", "cyber", "soc analyst", "soc ", "infosec",
+    "security", "cyber", "soc", "infosec",
     "information security", "grc", "vulnerability", "threat",
     "incident response", "blue team", "red team", "penetration test",
     "pentest", "siem", "risk analyst", "compliance analyst",
+    "cloud security", "application security", "network security",
+    "identity and access management", "iam", "digital forensics",
+    "security engineer", "security analyst", "cyber defense",
+    "cyber risk", "vulnerability management", "malware", "forensics",
+]
+
+# Word-boundary regex per keyword — avoids both false negatives (e.g. "soc"
+# not matching when a title has no trailing space, like "...Analyst (SOC)")
+# and false positives (e.g. "soc" incorrectly matching inside "social").
+_KEYWORD_PATTERNS = [
+    re.compile(r"\b" + re.escape(kw) + r"\b", re.IGNORECASE) for kw in KEYWORDS
 ]
 
 SEEN_FILE = Path(__file__).parent / "seen.json"
@@ -48,6 +59,11 @@ VANSH_README_URL = (
     "Summer2027-Internships/dev/README.md"
 )
 
+PARALAX_README_URL = (
+    "https://raw.githubusercontent.com/paralax/"
+    "awesome-cybersecurity-internships/master/README.md"
+)
+
 HEADERS = {"User-Agent": "cyber-internship-watcher/1.0"}
 
 
@@ -56,8 +72,7 @@ HEADERS = {"User-Agent": "cyber-internship-watcher/1.0"}
 # ---------------------------------------------------------------------------
 
 def matches_keywords(text: str) -> bool:
-    text_lower = text.lower()
-    return any(kw in text_lower for kw in KEYWORDS)
+    return any(p.search(text) for p in _KEYWORD_PATTERNS)
 
 
 def load_seen() -> set:
@@ -165,8 +180,78 @@ def fetch_vansh_postings() -> list[dict]:
 
 
 # ---------------------------------------------------------------------------
-# Email
+# Source 3: paralax/awesome-cybersecurity-internships (curated bullet list)
 # ---------------------------------------------------------------------------
+
+LINK_RE = re.compile(r"\[([^\]]+)\]\((https?://[^\s)]+)\)")
+
+
+def fetch_paralax_postings() -> list[dict]:
+    """
+    This list is already cyber-only by nature, so every entry under the
+    "Specific cybersecurity internships" heading counts — no keyword
+    filter needed here. Format looks like:
+
+        * Cencora
+          + [Cybersecurity Engineering Intern](https://...), Conshohocken, PA
+        * Comcast [Comcast Security Analyst Intern](https://...), Mount Laurel, NJ
+    """
+    postings = []
+    try:
+        resp = requests.get(PARALAX_README_URL, headers=HEADERS, timeout=30)
+        resp.raise_for_status()
+        text = resp.text
+    except Exception as exc:
+        print(f"[paralax] fetch failed: {exc}", file=sys.stderr)
+        return postings
+
+    # Isolate the "Specific cybersecurity internships" section only —
+    # skip the "Tech internships but not cybersecurity specific" section.
+    start = text.find("### Specific cybersecurity internships")
+    end = text.find("### Tech internships but not cybersecurity specific")
+    if start == -1:
+        print("[paralax] couldn't find expected section header", file=sys.stderr)
+        return postings
+    section = text[start:end if end != -1 else None]
+
+    current_company = ""
+    for line in section.splitlines():
+        if not line.strip():
+            continue
+
+        leading_spaces = len(line) - len(line.lstrip(" "))
+        content = line.strip()
+        if not content.startswith(("*", "+", "-")):
+            continue
+        content = content[1:].strip()
+
+        if leading_spaces == 0:
+            # Top-level bullet: this line names (or renames) the company.
+            bracket_idx = content.find("[")
+            current_company = (
+                content[:bracket_idx].strip() if bracket_idx != -1 else content
+            )
+            for role, link in LINK_RE.findall(content):
+                postings.append({
+                    "source": "paralax cyber list",
+                    "company": current_company,
+                    "role": role,
+                    "link": link,
+                })
+        else:
+            # Indented sub-bullet: inherits the company from above.
+            for role, link in LINK_RE.findall(content):
+                postings.append({
+                    "source": "paralax cyber list",
+                    "company": current_company,
+                    "role": role,
+                    "link": link,
+                })
+
+    return postings
+
+
+
 
 def send_email(new_postings: list[dict]) -> None:
     gmail_user = os.environ["GMAIL_USER"]
@@ -203,7 +288,9 @@ def send_email(new_postings: list[dict]) -> None:
 def main() -> None:
     seen = load_seen()
 
-    all_postings = fetch_zshah_postings() + fetch_vansh_postings()
+    all_postings = (
+        fetch_zshah_postings() + fetch_vansh_postings() + fetch_paralax_postings()
+    )
     print(f"Fetched {len(all_postings)} cyber-keyword postings total.")
 
     new_postings = []
