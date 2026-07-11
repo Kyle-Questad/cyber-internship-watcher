@@ -6,6 +6,7 @@ cybersecurity-flavored roles, and emails you when a new one shows up.
 Sources:
 - [zshah101/Automated-List-Of-Summer-2027-and-Fall-2026-Tech-Internships](https://github.com/zshah101/Automated-List-Of-Summer-2027-and-Fall-2026-Tech-Internships)
 - [vanshb03/Summer2027-Internships](https://github.com/vanshb03/Summer2027-Internships)
+- [paralax/awesome-cybersecurity-internships](https://github.com/paralax/awesome-cybersecurity-internships) — curated cyber-only list, not keyword-filtered since every entry already qualifies
 
 ## Setup
 
