@@ -56,6 +56,11 @@ WORKDAY_COMPANIES = [
     {"name": "Visa", "pod": "wd5", "tenant": "visa", "site": "Visa_Early_Careers"},
     {"name": "USAA", "pod": "wd1", "tenant": "usaa", "site": "USAAJOBSWD"},
     {"name": "Cisco", "pod": "wd5", "tenant": "cisco", "site": "Cisco_Careers"},
+    {"name": "Capital One", "pod": "wd12", "tenant": "capitalone", "site": "Capital_One"},
+    {"name": "Booz Allen Hamilton", "pod": "wd1", "tenant": "bah", "site": "BAH_Jobs"},
+    {"name": "PwC", "pod": "wd3", "tenant": "pwc", "site": "Global_Campus_Careers"},
+    {"name": "Fiserv", "pod": "wd5", "tenant": "fiserv", "site": "EXT"},
+    {"name": "Northern Trust", "pod": "wd1", "tenant": "ntrs", "site": "northerntrust"},
 ]
 
 # Search terms run individually per company — narrower terms surface more
