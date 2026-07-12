@@ -48,6 +48,14 @@ WORKDAY_COMPANIES = [
     {"name": "RTX", "pod": "wd5", "tenant": "globalhr", "site": "REC_RTX_Ext_Gateway"},
     {"name": "Boeing", "pod": "wd1", "tenant": "boeing", "site": "EXTERNAL_CAREERS"},
     {"name": "PayPal", "pod": "wd1", "tenant": "paypal", "site": "jobs"},
+    {"name": "Discover", "pod": "wd5", "tenant": "discover", "site": "Discover"},
+    {"name": "GoDaddy", "pod": "wd1", "tenant": "godaddy", "site": "GoDaddy_careers_events"},
+    {"name": "Avnet", "pod": "wd1", "tenant": "avnet", "site": "External"},
+    {"name": "Arrow Electronics", "pod": "wd1", "tenant": "arrow", "site": "AC"},
+    {"name": "GDIT", "pod": "wd5", "tenant": "gdit", "site": "External_Career_Site"},
+    {"name": "Visa", "pod": "wd5", "tenant": "visa", "site": "Visa_Early_Careers"},
+    {"name": "USAA", "pod": "wd1", "tenant": "usaa", "site": "USAAJOBSWD"},
+    {"name": "Cisco", "pod": "wd5", "tenant": "cisco", "site": "Cisco_Careers"},
 ]
 
 # Search terms run individually per company — narrower terms surface more
