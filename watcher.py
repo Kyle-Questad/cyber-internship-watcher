@@ -251,7 +251,96 @@ def fetch_paralax_postings() -> list[dict]:
     return postings
 
 
+# ---------------------------------------------------------------------------
+# Source 4: direct Workday company sites (confirmed tenants only)
+# ---------------------------------------------------------------------------
+# Workday exposes a public JSON search API used internally by every Workday
+# career site's own search box. Format:
+#   POST https://{tenant}.{pod}.myworkdayjobs.com/wday/cxs/{tenant}/{site}/jobs
+#   body: {"appliedFacets": {}, "limit": 20, "offset": 0, "searchText": "..."}
+#
+# Only companies below have been confirmed to actually run on Workday with
+# these exact tenant/site values. Don't add a company here on a guess —
+# a wrong tenant/site returns an HTTP error (caught below), but a *slightly*
+# wrong site slug can return an empty-but-valid response, which looks like
+# "no postings" instead of "this is broken." Verify before adding.
 
+WORKDAY_COMPANIES = [
+    {
+        "name": "Wells Fargo",
+        "pod": "wd1",
+        "tenant": "wf",
+        "site": "WellsFargoJobs",
+    },
+    {
+        "name": "Intel",
+        "pod": "wd1",
+        "tenant": "intel",
+        "site": "External",
+    },
+    {
+        "name": "RTX",
+        "pod": "wd5",
+        "tenant": "globalhr",
+        "site": "REC_RTX_Ext_Gateway",
+    },
+]
+
+# Search terms run individually per company — Workday's search matches
+# against title/description, so narrower terms surface more relevant hits
+# than one broad query.
+WORKDAY_SEARCH_TERMS = ["cyber", "security", "SOC"]
+
+
+def fetch_workday_postings() -> list[dict]:
+    postings = []
+    seen_urls_this_source = set()
+
+    for company in WORKDAY_COMPANIES:
+        base = f"https://{company['tenant']}.{company['pod']}.myworkdayjobs.com"
+        api_url = f"{base}/wday/cxs/{company['tenant']}/{company['site']}/jobs"
+
+        for term in WORKDAY_SEARCH_TERMS:
+            try:
+                resp = requests.post(
+                    api_url,
+                    headers={**HEADERS, "Content-Type": "application/json"},
+                    json={"appliedFacets": {}, "limit": 20, "offset": 0, "searchText": term},
+                    timeout=30,
+                )
+                resp.raise_for_status()
+                data = resp.json()
+            except Exception as exc:
+                print(f"[workday:{company['name']}:{term}] fetch failed: {exc}", file=sys.stderr)
+                continue
+
+            job_postings = data.get("jobPostings", [])
+            for job in job_postings:
+                title = job.get("title", "")
+                path = job.get("externalPath", "")
+                link = f"{base}/en-US/{company['site']}{path}" if path else ""
+
+                if link in seen_urls_this_source:
+                    continue  # de-dupe across the 3 search terms per company
+                seen_urls_this_source.add(link)
+
+                # Workday's search is fuzzy — re-check with our own keyword
+                # list so an off-topic match for e.g. "security" (as in
+                # "job security" language) doesn't slip through.
+                if matches_keywords(title):
+                    postings.append({
+                        "source": f"{company['name']} (Workday, direct)",
+                        "company": company["name"],
+                        "role": title,
+                        "link": link,
+                    })
+
+    return postings
+
+
+# ---------------------------------------------------------------------------
+# Email
+# ---------------------------------------------------------------------------
 
 def send_email(new_postings: list[dict]) -> None:
     gmail_user = os.environ["GMAIL_USER"]
@@ -285,11 +374,15 @@ def send_email(new_postings: list[dict]) -> None:
 # Main
 # ---------------------------------------------------------------------------
 
+
 def main() -> None:
     seen = load_seen()
 
     all_postings = (
-        fetch_zshah_postings() + fetch_vansh_postings() + fetch_paralax_postings()
+        fetch_zshah_postings()
+        + fetch_vansh_postings()
+        + fetch_paralax_postings()
+        + fetch_workday_postings()
     )
     print(f"Fetched {len(all_postings)} cyber-keyword postings total.")
 
