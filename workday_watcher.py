@@ -46,6 +46,8 @@ WORKDAY_COMPANIES = [
     {"name": "Wells Fargo", "pod": "wd1", "tenant": "wf", "site": "WellsFargoJobs"},
     {"name": "Intel", "pod": "wd1", "tenant": "intel", "site": "External"},
     {"name": "RTX", "pod": "wd5", "tenant": "globalhr", "site": "REC_RTX_Ext_Gateway"},
+    {"name": "Boeing", "pod": "wd1", "tenant": "boeing", "site": "EXTERNAL_CAREERS"},
+    {"name": "PayPal", "pod": "wd1", "tenant": "paypal", "site": "jobs"},
 ]
 
 # Search terms run individually per company — narrower terms surface more
